@@ -1,5 +1,6 @@
 from json import dumps
-from flask import Response, request
+from bson import json_util, objectid
+from flask import Response, request, current_app
 from jwt import encode, decode, exceptions
 from datetime import datetime, timedelta
 from functools import wraps
@@ -26,13 +27,21 @@ def validate_token(func):
             decode(token, key="password", algorithms=["HS256"])
             return func(*args, **kwargs) 
         except exceptions.DecodeError:
-            return Response(dumps({"message" : "invalid token"}), 401)
+            return Response(dumps({"message" : "invalid token"}), 401, mimetype='application/json')
         except exceptions.ExpiredSignatureError:
-            return Response(dumps({"message" : "token expired"}), 401)       
+            return Response(dumps({"message" : "token expired"}), 401, mimetype='application/json')       
         except KeyError:
             return Response(dumps({
                 "status": "error",
                 "message": "There's no Authorization header in the request."
-            }), 400)
+            }), 400, mimetype='application/json')
     return wrapper
             
+
+def current_user():
+    db =  current_app.config['db']
+    token = request.headers['Authorization']
+    token = token.split(" ")[1]
+    token_decode = decode(token, key="password", algorithms=["HS256"])
+    user = db.users.find_one({"_id": objectid.ObjectId(f"{token_decode['_id']}")})
+    return user
