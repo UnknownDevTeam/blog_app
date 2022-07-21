@@ -7,7 +7,7 @@ def create_app():
     CORS(app, support_credentials=True)
     import config
     app.config.from_object(config)
-    app.config['db'] = PyMongo(app).blog_app_db
+    app.config['db'] = PyMongo(app).db
     
     import auth
     app.register_blueprint(auth.auth_bp)
