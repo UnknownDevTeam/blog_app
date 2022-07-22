@@ -51,9 +51,9 @@ def find_post(post_id):
         return Response( dumps({"message": "Invalid id"}), 408, mimetype='application/json')
 
 
-@posts_bp.route('/my-posts/<user_id>', methods = ['GET'])
+@posts_bp.route('/user-posts/<user_id>', methods = ['GET'])
 @validate_token
-def my_posts(user_id):
+def user_posts(user_id):
     db =  current_app.config['db']
     try:
         user = db.users.find_one({"_id": objectid.ObjectId(f"{user_id}")})
@@ -69,3 +69,14 @@ def my_posts(user_id):
 
     except:
         return Response( dumps({"message": "Invalid id"}), 408, mimetype='application/json')
+
+@posts_bp.route('/my-posts/', methods = ['GET'])
+@validate_token
+def my_posts():
+    db =  current_app.config['db']
+    user_id = current_user()['_id']
+    posts = db.posts.find({"user_id": objectid.ObjectId(f"{user_id}")})
+    posts = json_util.dumps(posts)
+    if str(posts) == "[]":
+            return Response( dumps({"message": "No posts yet"}), 200, mimetype='application/json')
+    return Response( posts, 200, mimetype='application/json')
