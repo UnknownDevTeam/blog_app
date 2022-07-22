@@ -29,11 +29,8 @@ def my_profile():
             new_password = data['password']
             if new_email != email:
                 return Response(dumps({"message":"Email and password don't change here"}), 418, mimetype='application/json')
-            elif not check_password_hash(password, new_password):
+            if not check_password_hash(password, new_password):
                 return Response(dumps({"message":"Email and password don't change here"}), 418, mimetype='application/json')
-            else:
-                new_email = email
-                new_password = password
         except KeyError:
             pass
         
@@ -47,11 +44,9 @@ def my_profile():
 
         try:
             db.users.update_one({"_id": objectid.ObjectId(f"{current_user()['_id']}")},{ "$set": { "name": f"{new_name}",
-                                                                                                    "user": f"{new_user}",
-                                                                                                    "email": f"{new_email}",
-                                                                                                    "password": f"{new_password}" } })
+                                                                                                    "user": f"{new_user}" } })
                                                                                                     
-            return Response(dumps({"message":"Data updated successful"}), 418, mimetype='application/json')
+            return Response(dumps({"message":"Data updated successful"}), 200, mimetype='application/json')
 
         except:
             return Response(dumps({"message":"Error updating data"}), 418, mimetype='application/json')
@@ -70,9 +65,6 @@ def my_profile():
 @validate_token
 def change_password():
     db =  current_app.config['db']
-    name = current_user()['name']
-    user = current_user()['user']
-    email = current_user()['email']
     password = current_user()['password']
     try:
         data = request.get_json()
@@ -82,7 +74,6 @@ def change_password():
 
     except KeyError:
         return Response(dumps({"message":"Invalid key"}), 418, mimetype='application/json')
-
 
     if not old_password or not new_password or not confirm_password:
         return Response(dumps({"message":"Incomplete fields"}), 418, mimetype='application/json')
@@ -96,8 +87,5 @@ def change_password():
         return Response(dumps({"message":"Password must have at least 8 characters"}), 418, mimetype='application/json')
     else:
         password = generate_password_hash(new_password, method="sha256")
-        db.users.update_one({"_id": objectid.ObjectId(f"{current_user()['_id']}")},{ "$set": { "name": f"{name}",
-                                                                                                    "user": f"{user}",
-                                                                                                    "email": f"{email}",
-                                                                                                    "password": f"{password}" } })
+        db.users.update_one({"_id": objectid.ObjectId(f"{current_user()['_id']}")},{"$set": {"password": f"{password}"}})
         return Response(dumps({"message":"Password updated successful"}), 200, mimetype='application/json')

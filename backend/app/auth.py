@@ -23,9 +23,9 @@ def login():
     find_user = db.users.find_one({"email": f"{email}"})
     test_user = json_util.dumps(find_user)
     if str(test_user) == "null":
-        return Response(dumps({"message": "This email is not registered"}), 418, mimetype='application/json')
+        return Response(dumps({"message": "Invalid credentials"}), 418, mimetype='application/json')
     elif not check_password_hash(find_user["password"], password):
-        return Response(dumps({"message": "Incorrect password"}), 418, mimetype='application/json')
+        return Response(dumps({"message": "Invalid credentials"}), 418, mimetype='application/json')
     else:
         id = find_user["_id"]
         token = write_token(({"_id": f"{id}"}))

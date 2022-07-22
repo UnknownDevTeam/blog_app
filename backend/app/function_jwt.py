@@ -4,6 +4,7 @@ from flask import Response, request, current_app
 from jwt import encode, decode, exceptions
 from datetime import datetime, timedelta
 from functools import wraps
+import config
 
 def expire_date(days=15):
     now = datetime.now()
@@ -11,7 +12,7 @@ def expire_date(days=15):
     return exp
 
 def write_token(data: dict):
-    password = "password"
+    password = current_app.config['SECRET_KEY']
     token = encode(payload={**data, "exp":expire_date()}, key=password, algorithm="HS256")
     return token.encode("UTF-8")
 
@@ -24,7 +25,8 @@ def validate_token(func):
             if not token:
                 raise KeyError
             token = token.split(" ")[1]
-            decode(token, key="password", algorithms=["HS256"])
+            password = current_app.config['SECRET_KEY']
+            decode(token, key=password, algorithms=["HS256"])
             return func(*args, **kwargs) 
         except exceptions.DecodeError:
             return Response(dumps({"message" : "invalid token"}), 401, mimetype='application/json')
@@ -42,6 +44,7 @@ def current_user():
     db =  current_app.config['db']
     token = request.headers['Authorization']
     token = token.split(" ")[1]
-    token_decode = decode(token, key="password", algorithms=["HS256"])
+    password = current_app.config['SECRET_KEY']
+    token_decode = decode(token, key=password, algorithms=["HS256"])
     user = db.users.find_one({"_id": objectid.ObjectId(f"{token_decode['_id']}")})
     return user
