@@ -13,7 +13,7 @@ def expire_date(days=15):
 
 def write_token(data: dict):
     password = current_app.config['SECRET_KEY']
-    token = encode(payload={**data, "exp":expire_date()}, key=password, algorithm="HS256")
+    token = encode(payload={**data}, key=password, algorithm="HS256")
     return token.encode("UTF-8")
 
 
