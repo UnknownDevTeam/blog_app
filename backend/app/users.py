@@ -1,7 +1,9 @@
+from xml.etree.ElementPath import find
 from flask import Blueprint, Response, request, current_app
 from function_jwt import validate_token, current_user
 from json import dumps
-from bson import json_util, objectid
+from bson import json_util
+from bson.objectid import ObjectId
 from werkzeug.security import check_password_hash, generate_password_hash
 
 users_bp = Blueprint('users', __name__, url_prefix='/users')
@@ -23,6 +25,7 @@ def my_profile():
             new_user = data['user']                   
         except KeyError:
             return Response(dumps({"message":"Invalid key"}), 418, mimetype='application/json')
+
         
         try:
             new_email = data['email']
@@ -37,14 +40,14 @@ def my_profile():
         if not new_name or not new_user:
             return Response(dumps({"message":"Incomplete fields"}), 418, mimetype='application/json')
         if user != new_user:
-            find_user = db.users.find_one({"user" : f"{new_user}"})
-            find_user = json_util.dumps(find_user)
-            if str(find_user) != "null":
-                return Response(dumps({"message": "User already exists"}), 418, mimetype='application/json')
+            find_user = db.users.find_one({"user" : new_user})
+             
+            if find_user is not None:
+                return Response(dumps({"message": "User already exists"}), 400, mimetype='application/json')
+
 
         try:
-            db.users.update_one({"_id": objectid.ObjectId(f"{current_user()['_id']}")},{ "$set": { "name": f"{new_name}",
-                                                                                                    "user": f"{new_user}" } })
+            db.users.update_one({"_id": ObjectId(id)},{ "$set": {"name": new_name, "user": new_user} })
                                                                                                     
             return Response(dumps({"message":"Data updated successful"}), 200, mimetype='application/json')
 
@@ -87,5 +90,5 @@ def change_password():
         return Response(dumps({"message":"Password must have at least 8 characters"}), 418, mimetype='application/json')
     else:
         password = generate_password_hash(new_password, method="sha256")
-        db.users.update_one({"_id": objectid.ObjectId(f"{current_user()['_id']}")},{"$set": {"password": f"{password}"}})
+        db.users.update_one({"_id": ObjectId(current_user()['_id'])},{"$set": {"password": password} })
         return Response(dumps({"message":"Password updated successful"}), 200, mimetype='application/json')

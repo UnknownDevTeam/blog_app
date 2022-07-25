@@ -5,7 +5,6 @@ from json import dumps
 from werkzeug.security import generate_password_hash, check_password_hash
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
-#db = current_app.config['db']
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -18,17 +17,17 @@ def login():
         return Response(dumps({"message":"Invalid key"}), 418, mimetype='application/json')
 
     if not email or not password:
-        return Response(dumps({"message": "Incomplete fields"}), 418, mimetype='application/json')
+        return Response(dumps({"message": "Incomplete fields"}), 400, mimetype='application/json')
     
-    find_user = db.users.find_one({"email": f"{email}"})
-    test_user = json_util.dumps(find_user)
-    if str(test_user) == "null":
-        return Response(dumps({"message": "Invalid credentials"}), 418, mimetype='application/json')
+    find_user = db.users.find_one({"email": email})
+    
+    if not find_user:
+        return Response(dumps({"message": "Invalid credentials"}), 404, mimetype='application/json')
     elif not check_password_hash(find_user["password"], password):
-        return Response(dumps({"message": "Invalid credentials"}), 418, mimetype='application/json')
+        return Response(dumps({"message": "Invalid credentials"}), 404, mimetype='application/json')
     else:
         id = find_user["_id"]
-        token = write_token(({"_id": f"{id}"}))
+        token = write_token(({"_id": str(id)}))
         return Response(token, 200)
 
 
@@ -43,19 +42,16 @@ def sign_up():
         password = data['password']
     
     except KeyError:
-        #return Response(jsonify({"message":"Invalid key"}), 418)
         return Response(dumps({"message":"Invalid key"}), 418, mimetype='application/json')
 
-    find_user = db.users.find_one({"email" : f"{email}"})
-    find_user = json_util.dumps(find_user)
+    find_user = db.users.find_one({"email" : email})
 
-    if str(find_user) != "null":
+    if find_user is not None:
         return Response(dumps({"message": "Email already exists"}), 418, mimetype='application/json')
 
-    find_user = db.users.find_one({"user" : f"{user}"})
-    find_user = json_util.dumps(find_user)
+    find_user = db.users.find_one({"user" : user})
 
-    if str(find_user) != "null":
+    if find_user is not None:
         return Response(dumps({"message": "User already exists"}), 418, mimetype='application/json')
     elif not name or not user or not email or not password:
         return Response(dumps({"message": "Incomplete fields"}), 418, mimetype='application/json')  
@@ -66,14 +62,13 @@ def sign_up():
     else:
         password = generate_password_hash(password, method="sha256")
         new_user = db.users.insert_one({
-                                     "name" : f"{name}",
-                                     "user" : f"{user}",
-                                     "email" : f"{email}",
-                                     "password" : f"{password}"})
+                                     "name" : name,
+                                     "user" : user,
+                                     "email" : email,
+                                     "password" : password})
         id = new_user.inserted_id
-        token = write_token(({"_id": f"{id}"}))
+        token = write_token(({"_id": str(id)}))
         return Response(token, 201)
-
 
 
 @auth_bp.route('/protected')

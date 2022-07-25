@@ -1,5 +1,5 @@
 from json import dumps
-from bson import json_util, objectid
+from bson.objectid import ObjectId
 from flask import Response, request, current_app
 from jwt import encode, decode, exceptions
 from datetime import datetime, timedelta
@@ -46,5 +46,9 @@ def current_user():
     token = token.split(" ")[1]
     password = current_app.config['SECRET_KEY']
     token_decode = decode(token, key=password, algorithms=["HS256"])
-    user = db.users.find_one({"_id": objectid.ObjectId(f"{token_decode['_id']}")})
-    return user
+    try:
+        user = db.users.find_one({"_id": ObjectId(token_decode['_id'])})
+        return user
+    except:
+        Response(dumps({"message" : "toke error"}), 401, mimetype='application/json')
+    
