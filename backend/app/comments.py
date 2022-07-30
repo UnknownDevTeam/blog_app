@@ -43,13 +43,14 @@ def comment(post_id):
         except:
             return Response(dumps({"message": "Error creating comment"}), 408, mimetype='application/json')
     
-    comments = db.comments.find({"post_id" : ObjectId(post_id)})
+    comments = db.comments.find_one({"post_id" : ObjectId(post_id)})
     
     if not comments:
         return Response(dumps({"message": "No comments yet"}), 404, mimetype='application/json')
-    else:
-        response = post, {"comments": comments}
-        return Response(json_util.dumps(response), 404, mimetype='application/json')
+
+    comments = db.comments.find({"post_id" : ObjectId(post_id)})
+    response = post, comments
+    return Response(json_util.dumps(response), 404, mimetype='application/json')
 
 
 
@@ -83,10 +84,11 @@ def reply(type_id):
     
     type_data = str(type['type']) + "_id"
 
-    reply = db.comments.find({type_data : ObjectId(type_id)})
+    reply = db.comments.find_one({type_data : ObjectId(type_id)})
 
     if not reply:
         return Response(dumps({"message": "No replies yet"}), 409, mimetype='application/json')
 
+    reply = db.comments.find({type_data : ObjectId(type_id)})
     response = type, reply
     return Response(json_util.dumps(response), 200, mimetype='application/json')
